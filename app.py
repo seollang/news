@@ -41,7 +41,7 @@ def get_article_content(url):
         content = soup.find("article", {"id": "dic_area"})
         return content.get_text(strip=True) if content else ""
     except Exception as e:
-        st.error(f"기사 본문을 가져오는 Ninety
+        st.error(f"기사 본문을 가져오는 중 오류 발생: {e}")
         return ""
 
 # 요약 함수
