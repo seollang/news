@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from transformers import pipeline
 import re
+import time
 
 # Streamlit 페이지 설정
 st.set_page_config(page_title="IT News Summarizer", page_icon="📰", layout="wide")
@@ -10,20 +11,30 @@ st.set_page_config(page_title="IT News Summarizer", page_icon="📰", layout="wi
 # 뉴스 링크를 가져오는 함수
 def get_news_links():
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
     }
     try:
         response = requests.get("https://news.naver.com/section/105", headers=headers, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
         # IT/과학 섹션의 기사 링크 추출
-        links = soup.find_all("a", href=re.compile(r'read\.naver\?mode=LSD.*oid=\d+&aid=\d+'))
+        links = soup.find_all("a", class_=re.compile(r'sa_text_title'))
         news_links = []
+        seen_urls = set()  # 중복 URL 방지
         for link in links:
             href = link.get("href")
-            if href and not href.startswith("http"):
-                href = "https://news.naver.com" + href
-            news_links.append({"title": link.get_text(strip=True), "url": href})
+            if href and "read.naver" in href and href not in seen_urls:
+                if not href.startswith("http"):
+                    href = "https://news.naver.com" + href
+                title = link.get_text(strip=True)
+                if title:  # 제목이 비어있지 않은 경우만 추가
+                    news_links.append({"title": title, "url": href})
+                    seen_urls.add(href)
+        st.write(f"디버깅: {len(news_links)}개의 뉴스 링크를 찾았습니다.")
+        if not news_links:
+            st.write("디버깅: 찾은 링크 예시:", [link.get("href") for link in links[:5]])
         return news_links[:5]  # 최대 5개 기사
     except Exception as e:
         st.error(f"뉴스 링크를 가져오는 중 오류 발생: {e}")
@@ -32,7 +43,7 @@ def get_news_links():
 # 뉴스 본문을 가져오는 함수
 def get_article_content(url):
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
     }
     try:
         response = requests.get(url, headers=headers, timeout=10)
