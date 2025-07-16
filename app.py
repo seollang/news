@@ -19,19 +19,22 @@ def get_news_links():
         response = requests.get("https://news.naver.com/section/105", headers=headers, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
-        # IT/과학 섹션의 기사 링크 추출
-        links = soup.find_all("a", href=re.compile(r'n\.news\.naver\.com/mnews/article/\d+/\d+'))
+        # IT/과학 섹션의 기사 컨테이너 찾기
+        articles = soup.find_all("div", class_="sa_text")
         news_links = []
         seen_urls = set()
-        for link in links:
-            href = link.get("href")
-            if href and href not in seen_urls:
-                if not href.startswith("http"):
-                    href = "https://news.naver.com" + href
-                title = link.get_text(strip=True) or "제목 없음"
-                st.write(f"디버깅: 링크={href}, 제목={title}")
-                news_links.append({"title": title, "url": href})
-                seen_urls.add(href)
+        for article in articles:
+            link = article.find("a", href=re.compile(r'n\.news\.naver\.com/mnews/article/\d+/\d+'))
+            title_tag = article.find("strong", class_="sa_text_strong")
+            if link and title_tag:
+                href = link.get("href")
+                if href and href not in seen_urls:
+                    if not href.startswith("http"):
+                        href = "https://news.naver.com" + href
+                    title = title_tag.get_text(strip=True) or "제목 없음"
+                    st.write(f"디버깅: 링크={href}, 제목={title}")
+                    news_links.append({"title": title, "url": href})
+                    seen_urls.add(href)
         st.write(f"디버깅: {len(news_links)}개의 뉴스 링크를 찾았습니다.")
         return news_links[:5]  # 최대 5개 기사
     except Exception as e:
