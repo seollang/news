@@ -20,21 +20,19 @@ def get_news_links():
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
         # IT/과학 섹션의 기사 링크 추출
-        links = soup.find_all("a", class_=re.compile(r'sa_text_title'))
+        links = soup.find_all("a", href=re.compile(r'n\.news\.naver\.com/mnews/article/\d+/\d+'))
         news_links = []
-        seen_urls = set()  # 중복 URL 방지
+        seen_urls = set()
         for link in links:
             href = link.get("href")
-            if href and "read.naver" in href and href not in seen_urls:
+            if href and href not in seen_urls:
                 if not href.startswith("http"):
                     href = "https://news.naver.com" + href
-                title = link.get_text(strip=True)
-                if title:  # 제목이 비어있지 않은 경우만 추가
-                    news_links.append({"title": title, "url": href})
-                    seen_urls.add(href)
+                title = link.get_text(strip=True) or "제목 없음"
+                st.write(f"디버깅: 링크={href}, 제목={title}")
+                news_links.append({"title": title, "url": href})
+                seen_urls.add(href)
         st.write(f"디버깅: {len(news_links)}개의 뉴스 링크를 찾았습니다.")
-        if not news_links:
-            st.write("디버깅: 찾은 링크 예시:", [link.get("href") for link in links[:5]])
         return news_links[:5]  # 최대 5개 기사
     except Exception as e:
         st.error(f"뉴스 링크를 가져오는 중 오류 발생: {e}")
