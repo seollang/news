@@ -32,10 +32,8 @@ def get_news_links():
                     if not href.startswith("http"):
                         href = "https://news.naver.com" + href
                     title = title_tag.get_text(strip=True) or "제목 없음"
-                    st.write(f"디버깅: 링크={href}, 제목={title}")
                     news_links.append({"title": title, "url": href})
                     seen_urls.add(href)
-        st.write(f"디버깅: {len(news_links)}개의 뉴스 링크를 찾았습니다.")
         return news_links[:5]  # 최대 5개 기사
     except Exception as e:
         st.error(f"뉴스 링크를 가져오는 중 오류 발생: {e}")
